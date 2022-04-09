@@ -3,11 +3,12 @@ package customer;
 
 import clients.fraud.FraudCheckResponse;
 import clients.fraud.FraudClient;
+import clients.notification.NotificationClient;
+import clients.notification.NotificationRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Service
-public record CustomerService(CustomerRepo customerRepo, RestTemplate restTemplate, FraudClient fraudClient) {
+public record CustomerService(CustomerRepo customerRepo, FraudClient fraudClient, NotificationClient notificationClient) {
     public void registerCustomer(CustomerRegistrationRequest customerRegistrationRequest) {
         Customer customer = Customer.builder()
                 .firstName(customerRegistrationRequest.firstName())
@@ -26,5 +27,15 @@ public record CustomerService(CustomerRepo customerRepo, RestTemplate restTempla
         if(fraudCheckResponse.isFraudster()){
             throw new IllegalStateException("It's a fruadster");//Not considering null values at the moment
         }
+
+        notificationClient.sendNotification(
+                new NotificationRequest(
+                        customer.getId(),
+                        customer.getEmail(),
+                        String.format("Hi %s, welcome to DH...",
+                                customer.getFirstName())
+                )
+        );
+
     }
 }
