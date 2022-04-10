@@ -1,16 +1,16 @@
 package customer;
 
 
+import amqp.RabbitMQMessageProducer;
 import clients.fraud.FraudCheckResponse;
 import clients.fraud.FraudClient;
-import clients.notification.NotificationClient;
 import clients.notification.NotificationRequest;
 import org.springframework.stereotype.Service;
 
 @Service
-public record CustomerService(CustomerRepo customerRepo, FraudClient fraudClient, NotificationClient notificationClient) {
+public record CustomerService(CustomerRepo customerRepo, FraudClient fraudClient, RabbitMQMessageProducer rabbitMQMessageProducer) {
     public void registerCustomer(CustomerRegistrationRequest customerRegistrationRequest) {
-        Customer customer = Customer.builder()
+        var customer = Customer.builder()
                 .firstName(customerRegistrationRequest.firstName())
                 .lastName(customerRegistrationRequest.lastName())
                 .email(customerRegistrationRequest.email())
@@ -28,13 +28,21 @@ public record CustomerService(CustomerRepo customerRepo, FraudClient fraudClient
             throw new IllegalStateException("It's a fruadster");//Not considering null values at the moment
         }
 
-        notificationClient.sendNotification(
-                new NotificationRequest(
-                        customer.getId(),
-                        customer.getEmail(),
-                        String.format("Hi %s, welcome to DH...",
-                                customer.getFirstName())
-                )
+        var notificationRequest = new NotificationRequest(
+                customer.getId(),
+                customer.getEmail(),
+                String.format("Hi %s, welcome to DH...",
+                        customer.getFirstName())
+        );
+
+        //This was de direct way to notify . Now will be sent to Queue
+        /*notificationClient.sendNotification(
+                notificationRequest
+        );*/
+        rabbitMQMessageProducer.publish(
+                notificationRequest,
+                "internal.exchange",
+                "rabbitmq.routing-keys.internal"
         );
 
     }

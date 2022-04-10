@@ -15,6 +15,7 @@
       <module>clients</module>
     <module>notification</module>
       <module>api-gateway</module>
+      <module>amqp</module>
   </modules>
 
   <name>parent-pom</name>
@@ -75,5 +76,6 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    
   </build>
 </project>
